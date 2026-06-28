@@ -1,10 +1,18 @@
+import Navbar from "../../components/landing/Navbar";
+import Hero from "../../components/landing/Hero";
+import Stats from "@/components/landing/Stats";
+import Features from "@/components/landing/Features";
+
+
 function LandingPage() {
   return (
-    <div>
-      <h1 className="text-5xl font-bold text-center mt-20">
-        NestSphere Landing Page
-      </h1>
-    </div>
+    <>
+      <Navbar />
+      <Hero />
+      <Stats/>
+      <Features/>
+      
+    </>
   );
 }
 
