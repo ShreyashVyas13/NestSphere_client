@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-
 import {
   Sheet,
   SheetContent,
@@ -26,13 +25,15 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "react-hot-toast";
 
 import { memberSchema } from "../../../schemas/memberSchema";
-import { createMember } from "../../services/memberService";
+import { createMember, updateMember } from "../../services/memberService";
 import { getFlatOptions } from "../../services/flatService";
 
 function AddMemberDrawer({
   open,
   onOpenChange,
   onMemberAdded,
+  member,
+  isEditMode,
 }) {
   const [flats, setFlats] = useState([]);
 
@@ -41,10 +42,7 @@ function AddMemberDrawer({
     control,
     handleSubmit,
     reset,
-    formState: {
-      errors,
-      isSubmitting,
-    },
+    formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(memberSchema),
 
@@ -76,9 +74,43 @@ function AddMemberDrawer({
     }
   }, [open]);
 
+  useEffect(() => {
+    if (!open) return;
+
+    if (isEditMode && member) {
+      reset({
+        fullName: member.fullName || "",
+        email: member.email || "",
+        mobile: member.mobile || "",
+        gender: member.gender || "",
+        flat: member.flat?._id || "",
+        memberType: member.memberType || "Owner",
+        occupation: member.occupation || "",
+        status: member.status || "Active",
+      });
+    } else {
+      reset({
+        fullName: "",
+        email: "",
+        mobile: "",
+        gender: "",
+        flat: "",
+        memberType: "Owner",
+        occupation: "",
+        status: "Active",
+      });
+    }
+  }, [open, member, isEditMode, reset]);
+
   const onSubmit = async (data) => {
     try {
-      const response = await createMember(data);
+      let response;
+
+      if (isEditMode) {
+        response = await updateMember(member._id, data);
+      } else {
+        response = await createMember(data);
+      }
 
       toast.success(response.message);
 
@@ -92,45 +124,32 @@ function AddMemberDrawer({
     } catch (error) {
       toast.error(
         error.response?.data?.message ||
-          "Unable to add member."
+          (isEditMode ? "Unable to update member." : "Unable to add member."),
       );
     }
   };
 
   return (
-    <Sheet
-      open={open}
-      onOpenChange={onOpenChange}
-    >
+    <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="sm:max-w-xl overflow-y-auto">
         <SheetHeader>
-          <SheetTitle>
-            Add Member
-          </SheetTitle>
+          <SheetTitle>{isEditMode ? "Edit Member" : "Add Member"}</SheetTitle>
 
           <SheetDescription>
-            Fill the details below.
+            {isEditMode ? "Update member details." : "Fill the details below."}
           </SheetDescription>
         </SheetHeader>
 
-        <form
-          onSubmit={handleSubmit(onSubmit)}
-          className="space-y-5 mt-8"
-        >
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 mt-8">
           {/* Full Name */}
 
           <div className="space-y-2">
             <Label>Full Name</Label>
 
-            <Input
-              placeholder="Rahul Patel"
-              {...register("fullName")}
-            />
+            <Input placeholder="Rahul Patel" {...register("fullName")} />
 
             {errors.fullName && (
-              <p className="text-red-500 text-sm">
-                {errors.fullName.message}
-              </p>
+              <p className="text-red-500 text-sm">{errors.fullName.message}</p>
             )}
           </div>
 
@@ -139,15 +158,10 @@ function AddMemberDrawer({
           <div className="space-y-2">
             <Label>Email</Label>
 
-            <Input
-              placeholder="rahul@gmail.com"
-              {...register("email")}
-            />
+            <Input placeholder="rahul@gmail.com" {...register("email")} />
 
             {errors.email && (
-              <p className="text-red-500 text-sm">
-                {errors.email.message}
-              </p>
+              <p className="text-red-500 text-sm">{errors.email.message}</p>
             )}
           </div>
 
@@ -156,15 +170,10 @@ function AddMemberDrawer({
           <div className="space-y-2">
             <Label>Mobile</Label>
 
-            <Input
-              placeholder="9876543210"
-              {...register("mobile")}
-            />
+            <Input placeholder="9876543210" {...register("mobile")} />
 
             {errors.mobile && (
-              <p className="text-red-500 text-sm">
-                {errors.mobile.message}
-              </p>
+              <p className="text-red-500 text-sm">{errors.mobile.message}</p>
             )}
           </div>
           {/* Gender */}
@@ -176,35 +185,24 @@ function AddMemberDrawer({
               name="gender"
               control={control}
               render={({ field }) => (
-                <Select
-                  value={field.value}
-                  onValueChange={field.onChange}
-                >
+                <Select value={field.value} onValueChange={field.onChange}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select Gender" />
                   </SelectTrigger>
 
                   <SelectContent>
-                    <SelectItem value="Male">
-                      Male
-                    </SelectItem>
+                    <SelectItem value="Male">Male</SelectItem>
 
-                    <SelectItem value="Female">
-                      Female
-                    </SelectItem>
+                    <SelectItem value="Female">Female</SelectItem>
 
-                    <SelectItem value="Other">
-                      Other
-                    </SelectItem>
+                    <SelectItem value="Other">Other</SelectItem>
                   </SelectContent>
                 </Select>
               )}
             />
 
             {errors.gender && (
-              <p className="text-red-500 text-sm">
-                {errors.gender.message}
-              </p>
+              <p className="text-red-500 text-sm">{errors.gender.message}</p>
             )}
           </div>
 
@@ -217,22 +215,15 @@ function AddMemberDrawer({
               name="flat"
               control={control}
               render={({ field }) => (
-                <Select
-                  value={field.value}
-                  onValueChange={field.onChange}
-                >
+                <Select value={field.value} onValueChange={field.onChange}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select Flat" />
                   </SelectTrigger>
 
                   <SelectContent>
                     {flats.map((flat) => (
-                      <SelectItem
-                        key={flat._id}
-                        value={flat._id}
-                      >
-                        {flat.block}-
-                        {String(flat.flatNo).padStart(3, "0")}
+                      <SelectItem key={flat._id} value={flat._id}>
+                        {flat.block}-{String(flat.flatNo).padStart(3, "0")}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -241,9 +232,7 @@ function AddMemberDrawer({
             />
 
             {errors.flat && (
-              <p className="text-red-500 text-sm">
-                {errors.flat.message}
-              </p>
+              <p className="text-red-500 text-sm">{errors.flat.message}</p>
             )}
           </div>
 
@@ -256,26 +245,17 @@ function AddMemberDrawer({
               name="memberType"
               control={control}
               render={({ field }) => (
-                <Select
-                  value={field.value}
-                  onValueChange={field.onChange}
-                >
+                <Select value={field.value} onValueChange={field.onChange}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select Member Type" />
                   </SelectTrigger>
 
                   <SelectContent>
-                    <SelectItem value="Owner">
-                      Owner
-                    </SelectItem>
+                    <SelectItem value="Owner">Owner</SelectItem>
 
-                    <SelectItem value="Tenant">
-                      Tenant
-                    </SelectItem>
+                    <SelectItem value="Tenant">Tenant</SelectItem>
 
-                    <SelectItem value="Family Member">
-                      Family Member
-                    </SelectItem>
+                    <SelectItem value="Family Member">Family Member</SelectItem>
 
                     <SelectItem value="Committee Member">
                       Committee Member
@@ -323,13 +303,14 @@ function AddMemberDrawer({
               Cancel
             </Button>
 
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-            >
+            <Button type="submit" disabled={isSubmitting}>
               {isSubmitting
-                ? "Saving..."
-                : "Save Member"}
+                ? isEditMode
+                  ? "Updating..."
+                  : "Saving..."
+                : isEditMode
+                  ? "Update Member"
+                  : "Save Member"}
             </Button>
           </div>
         </form>

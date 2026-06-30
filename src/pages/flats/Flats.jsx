@@ -7,9 +7,10 @@ import SearchBar from "../../components/common/SearchBar";
 import DataTable from "../../components/common/DataTable";
 import AddFlatDrawer from "../../pages/flats/AddFlatDrawer";
 
-import { getFlats } from "../../services/flatService";
-
 import { toast } from "react-hot-toast";
+import { Pencil, Trash2 } from "lucide-react";
+
+import { getFlats, deleteFlat } from "../../services/flatService";
 
 function Flats() {
   const [search, setSearch] = useState("");
@@ -19,6 +20,10 @@ function Flats() {
   const [flats, setFlats] = useState([]);
 
   const [loading, setLoading] = useState(true);
+
+  const [selectedFlat, setSelectedFlat] = useState(null);
+
+  const [isEditMode, setIsEditMode] = useState(false);
 
   // ===============================
   // Fetch Flats
@@ -35,6 +40,24 @@ function Flats() {
       toast.error(error.response?.data?.message || "Failed to load flats.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    const confirmDelete = window.confirm(
+      "Are you sure you want to delete this flat?",
+    );
+
+    if (!confirmDelete) return;
+
+    try {
+      const response = await deleteFlat(id);
+
+      toast.success(response.message);
+
+      fetchFlats();
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Unable to delete flat.");
     }
   };
 
@@ -87,6 +110,27 @@ function Flats() {
         </span>
       ),
     },
+    {
+      header: "Actions",
+
+      cell: ({ row }) => (
+        <div className="flex gap-3">
+          <button
+            onClick={() => {
+              setSelectedFlat(row.original);
+              setIsEditMode(true);
+              setOpenDrawer(true);
+            }}
+          >
+            <Pencil size={18} className="text-blue-600 hover:text-blue-800" />
+          </button>
+
+          <button onClick={() => handleDelete(row.original._id)}>
+            <Trash2 size={18} className="text-red-600 hover:text-red-800" />
+          </button>
+        </div>
+      ),
+    },
   ];
 
   // ===============================
@@ -96,7 +140,9 @@ function Flats() {
 
     return (
       flat.block.toLowerCase().includes(keyword) ||
-      flat.flatNumber.toLowerCase().includes(keyword)
+      `${flat.block}-${String(flat.flatNo).padStart(3, "0")}`
+        .toLowerCase()
+        .includes(keyword)
     );
   });
 
@@ -127,8 +173,17 @@ function Flats() {
 
       <AddFlatDrawer
         open={openDrawer}
-        onOpenChange={setOpenDrawer}
+        onOpenChange={(value) => {
+          setOpenDrawer(value);
+
+          if (!value) {
+            setSelectedFlat(null);
+            setIsEditMode(false);
+          }
+        }}
         onFlatAdded={fetchFlats}
+        flat={selectedFlat}
+        isEditMode={isEditMode}
       />
     </DashboardLayout>
   );

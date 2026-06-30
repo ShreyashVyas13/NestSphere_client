@@ -1,20 +1,21 @@
 import { useEffect, useState } from "react";
-
 import DashboardLayout from "../../layouts/DashboardLayout";
-
 import PageHeader from "../../components/common/PageHeader";
 import SearchBar from "../../components/common/SearchBar";
 import DataTable from "../../components/common/DataTable";
-
 import AddMemberDrawer from "../../components/members/AddMemberDrawer";
+import { getMembers, deleteMember, } from "../../services/memberService";
+import { Pencil, Trash2 } from "lucide-react";
+import { toast } from "react-hot-toast";
 
-import { getMembers } from "../../services/memberService";
 
 function Members() {
   const [search, setSearch] = useState("");
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [openDrawer, setOpenDrawer] = useState(false);
+  const [selectedMember, setSelectedMember] = useState(null);
+  const [isEditMode, setIsEditMode] = useState(false);
 
   const loadMembers = async () => {
     try {
@@ -30,14 +31,33 @@ function Members() {
     }
   };
 
+  const handleDelete = async (id) => {
+  const confirmDelete = window.confirm(
+    "Are you sure you want to delete this member?"
+  );
+
+  if (!confirmDelete) return;
+
+  try {
+    const response = await deleteMember(id);
+
+    toast.success(response.message);
+
+    loadMembers();
+  } catch (error) {
+    toast.error(
+      error.response?.data?.message ||
+        "Failed to delete member."
+    );
+  }
+};
+
   useEffect(() => {
     loadMembers();
   }, []);
 
   const filteredMembers = members.filter((member) =>
-    member.fullName
-      ?.toLowerCase()
-      .includes(search.toLowerCase())
+    member.fullName?.toLowerCase().includes(search.toLowerCase()),
   );
 
   const columns = [
@@ -51,8 +71,7 @@ function Members() {
     },
     {
       header: "Mobile",
-      cell: ({ row }) =>
-        row.original.mobile || row.original.phone || "-",
+      cell: ({ row }) => row.original.mobile || row.original.phone || "-",
     },
     {
       header: "Flat",
@@ -60,17 +79,12 @@ function Members() {
         const flat = row.original.flat;
 
         if (!flat) {
-          return (
-            <span className="text-gray-400">
-              N/A
-            </span>
-          );
+          return <span className="text-gray-400">N/A</span>;
         }
 
         return (
           <span className="font-medium">
-            {flat.block}-
-            {String(flat.flatNo).padStart(3, "0")}
+            {flat.block}-{String(flat.flatNo).padStart(3, "0")}
           </span>
         );
       },
@@ -93,6 +107,29 @@ function Members() {
         </span>
       ),
     },
+    {
+      header: "Actions",
+
+      cell: ({ row }) => (
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => {
+              setSelectedMember(row.original);
+              setIsEditMode(true);
+              setOpenDrawer(true);
+            }}
+          >
+            <Pencil size={18} className="text-blue-600 hover:text-blue-800" />
+          </button>
+
+          <button
+            onClick={() => handleDelete(row.original._id)}
+          >
+            <Trash2 size={18} className="text-red-600 hover:text-red-800" />
+          </button>
+        </div>
+      ),
+    },
   ];
 
   return (
@@ -108,22 +145,25 @@ function Members() {
         <SearchBar
           placeholder="Search members..."
           value={search}
-          onChange={(e) =>
-            setSearch(e.target.value)
-          }
+          onChange={(e) => setSearch(e.target.value)}
         />
       </div>
 
-      <DataTable
-        columns={columns}
-        data={filteredMembers}
-        loading={loading}
-      />
+      <DataTable columns={columns} data={filteredMembers} loading={loading} />
 
       <AddMemberDrawer
         open={openDrawer}
-        onOpenChange={setOpenDrawer}
+        onOpenChange={(value) => {
+          setOpenDrawer(value);
+
+          if (!value) {
+            setSelectedMember(null);
+            setIsEditMode(false);
+          }
+        }}
         onMemberAdded={loadMembers}
+        member={selectedMember}
+        isEditMode={isEditMode}
       />
     </DashboardLayout>
   );
