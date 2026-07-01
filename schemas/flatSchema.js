@@ -18,5 +18,4 @@ export const flatSchema = z.object({
     .number()
     .min(100, "Area should be at least 100 sq.ft"),
 
-  status: z.enum(["Vacant", "Occupied"]),
 });

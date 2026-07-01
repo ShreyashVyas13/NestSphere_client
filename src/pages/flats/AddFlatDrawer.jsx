@@ -308,7 +308,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 
 import { flatSchema } from "../../../schemas/flatSchema";
 import { createFlat, updateFlat } from "../../services/flatService";
-import { BLOCKS, BHK_TYPES, FLAT_STATUS } from "../../constants/flatConstants";
+import { BLOCKS, BHK_TYPES, } from "../../constants/flatConstants";
 
 import { toast } from "react-hot-toast";
 
@@ -328,7 +328,6 @@ function AddFlatDrawer({ open, onOpenChange, onFlatAdded, flat, isEditMode }) {
       floor: "",
       bhkType: "",
       area: "",
-      status: "Vacant",
     },
   });
   useEffect(() => {
@@ -341,7 +340,6 @@ function AddFlatDrawer({ open, onOpenChange, onFlatAdded, flat, isEditMode }) {
         floor: flat.floor,
         bhkType: flat.bhkType,
         area: flat.area,
-        status: flat.status,
       });
     } else {
       reset({
@@ -350,12 +348,11 @@ function AddFlatDrawer({ open, onOpenChange, onFlatAdded, flat, isEditMode }) {
         floor: "",
         bhkType: "",
         area: "",
-        status: "Vacant",
       });
     }
   }, [open, flat, isEditMode, reset]);
   const onSubmit = async (data) => {
-      console.log("Submitting Flat:", data);
+    console.log("Submitting Flat:", data);
     try {
       let response;
 
@@ -507,7 +504,7 @@ function AddFlatDrawer({ open, onOpenChange, onFlatAdded, flat, isEditMode }) {
 
           {/* Status */}
 
-          <div className="space-y-2">
+          {/* <div className="space-y-2">
             <Label>Status</Label>
 
             <Controller
@@ -533,7 +530,7 @@ function AddFlatDrawer({ open, onOpenChange, onFlatAdded, flat, isEditMode }) {
             {errors.status && (
               <p className="text-sm text-red-500">{errors.status.message}</p>
             )}
-          </div>
+          </div> */}
 
           {/* Buttons */}
 
