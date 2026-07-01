@@ -1,11 +1,10 @@
 import { useEffect, useState } from "react";
-
 import DashboardLayout from "../../layouts/DashboardLayout";
-
 import PageHeader from "../../components/common/PageHeader";
 import SearchBar from "../../components/common/SearchBar";
 import DataTable from "../../components/common/DataTable";
 import AddFlatDrawer from "../../pages/flats/AddFlatDrawer";
+import DeleteConfirmDialog from "../../components/common/DeleteConfirmDialog";
 
 import { toast } from "react-hot-toast";
 import { Pencil, Trash2 } from "lucide-react";
@@ -25,6 +24,10 @@ function Flats() {
 
   const [isEditMode, setIsEditMode] = useState(false);
 
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+
+  const [flatToDelete, setFlatToDelete] = useState(null);
+
   // ===============================
   // Fetch Flats
   // ===============================
@@ -43,17 +46,16 @@ function Flats() {
     }
   };
 
-  const handleDelete = async (id) => {
-    const confirmDelete = window.confirm(
-      "Are you sure you want to delete this flat?",
-    );
-
-    if (!confirmDelete) return;
+  const handleDelete = async () => {
+    if (!flatToDelete) return;
 
     try {
-      const response = await deleteFlat(id);
+      const response = await deleteFlat(flatToDelete._id);
 
       toast.success(response.message);
+
+      setDeleteDialogOpen(false);
+      setFlatToDelete(null);
 
       fetchFlats();
     } catch (error) {
@@ -125,7 +127,12 @@ function Flats() {
             <Pencil size={18} className="text-blue-600 hover:text-blue-800" />
           </button>
 
-          <button onClick={() => handleDelete(row.original._id)}>
+          <button
+            onClick={() => {
+              setFlatToDelete(row.original);
+              setDeleteDialogOpen(true);
+            }}
+          >
             <Trash2 size={18} className="text-red-600 hover:text-red-800" />
           </button>
         </div>
@@ -184,6 +191,19 @@ function Flats() {
         onFlatAdded={fetchFlats}
         flat={selectedFlat}
         isEditMode={isEditMode}
+      />
+      <DeleteConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title="Delete Flat"
+        description={
+          flatToDelete
+            ? `Are you sure you want to delete Flat ${flatToDelete.block}-${String(
+                flatToDelete.flatNo,
+              ).padStart(3, "0")}?`
+            : ""
+        }
+        onConfirm={handleDelete}
       />
     </DashboardLayout>
   );

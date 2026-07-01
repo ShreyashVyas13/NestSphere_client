@@ -4,10 +4,10 @@ import PageHeader from "../../components/common/PageHeader";
 import SearchBar from "../../components/common/SearchBar";
 import DataTable from "../../components/common/DataTable";
 import AddMemberDrawer from "../../components/members/AddMemberDrawer";
-import { getMembers, deleteMember, } from "../../services/memberService";
+import { getMembers, deleteMember } from "../../services/memberService";
 import { Pencil, Trash2 } from "lucide-react";
 import { toast } from "react-hot-toast";
-
+import DeleteConfirmDialog from "../../components/common/DeleteConfirmDialog";
 
 function Members() {
   const [search, setSearch] = useState("");
@@ -16,6 +16,8 @@ function Members() {
   const [openDrawer, setOpenDrawer] = useState(false);
   const [selectedMember, setSelectedMember] = useState(null);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [memberToDelete, setMemberToDelete] = useState(null);
 
   const loadMembers = async () => {
     try {
@@ -31,26 +33,23 @@ function Members() {
     }
   };
 
-  const handleDelete = async (id) => {
-  const confirmDelete = window.confirm(
-    "Are you sure you want to delete this member?"
-  );
+  const handleDelete = async () => {
+    if (!memberToDelete) return;
 
-  if (!confirmDelete) return;
+    try {
+      const response = await deleteMember(memberToDelete._id);
 
-  try {
-    const response = await deleteMember(id);
+      toast.success(response.message);
 
-    toast.success(response.message);
+      setDeleteDialogOpen(false);
 
-    loadMembers();
-  } catch (error) {
-    toast.error(
-      error.response?.data?.message ||
-        "Failed to delete member."
-    );
-  }
-};
+      setMemberToDelete(null);
+
+      loadMembers();
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to delete member.");
+    }
+  };
 
   useEffect(() => {
     loadMembers();
@@ -123,7 +122,10 @@ function Members() {
           </button>
 
           <button
-            onClick={() => handleDelete(row.original._id)}
+            onClick={() => {
+              setMemberToDelete(row.original);
+              setDeleteDialogOpen(true);
+            }}
           >
             <Trash2 size={18} className="text-red-600 hover:text-red-800" />
           </button>
@@ -164,6 +166,17 @@ function Members() {
         onMemberAdded={loadMembers}
         member={selectedMember}
         isEditMode={isEditMode}
+      />
+      <DeleteConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title="Delete Member"
+        description={
+          memberToDelete
+            ? `Are you sure you want to delete "${memberToDelete.fullName}"?`
+            : ""
+        }
+        onConfirm={handleDelete}
       />
     </DashboardLayout>
   );
